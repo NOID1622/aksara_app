@@ -1,15 +1,13 @@
 import os
 from utils import resource_path
-from PyQt6.QtGui import QIcon
-from PyQt6.QtCore import QSize
-from PyQt6.QtWidgets import QWidget as _W
+from PyQt6.QtGui import QIcon, QAction, QFont, QImage
+from PyQt6.QtCore import QSize, Qt, QRectF
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QVBoxLayout,
     QSplitter, QToolBar, QFileDialog, QStatusBar,
-    QLabel, QMessageBox, QSizePolicy, QPushButton
+    QLabel, QMessageBox, QSizePolicy, QPushButton,
+    QDialog, QVBoxLayout, QFrame
 )
-from PyQt6.QtGui import QAction, QFont, QIcon
-from PyQt6.QtCore import Qt
 
 from ui.image_viewer import ImageViewer, biner_ke_qimage, rgb_ke_qimage, gray_ke_qimage
 from ui.settings_panel import SettingsPanel
@@ -20,12 +18,7 @@ from core.worker import PipelineWorker
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        # self.setWindowIcon(QIcon("icon.svg"))
-        self.setWindowIcon(
-            QIcon(
-                resource_path("icon.svg")
-            )
-        )
+        self.setWindowIcon(QIcon(resource_path("icon.svg")))
         self.setWindowTitle("Segmentasi Aksara")
         self.resize(1200, 800)
         self._hasil = None
@@ -60,7 +53,6 @@ class MainWindow(QMainWindow):
         splitter_v = QSplitter(Qt.Orientation.Vertical)
         splitter_v.setHandleWidth(3)
 
-        # Baris atas: viewer + settings
         top = QSplitter(Qt.Orientation.Horizontal)
         top.setHandleWidth(3)
 
@@ -68,12 +60,12 @@ class MainWindow(QMainWindow):
         self.settings = SettingsPanel()
         self.settings.run_requested.connect(self._jalankan)
         self.settings.ekspor_btn.clicked.connect(self._ekspor_ppm)
+        self.settings.ekspor_png_btn.clicked.connect(self._ekspor_png)
 
         top.addWidget(self.viewer)
         top.addWidget(self.settings)
         top.setSizes([900, 260])
 
-        # Baris bawah: galeri hasil
         self.gallery = ResultGallery()
         self.gallery.baris_dipilih.connect(self._pilih_baris)
 
@@ -89,17 +81,14 @@ class MainWindow(QMainWindow):
         tb.setMovable(False)
         tb.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
         self.addToolBar(tb)
-        
+
         def aksi_icon(icon_path, slot, tip=""):
-            a = QAction(
-                QIcon(resource_path(icon_path)),
-                "",
-                self
-            )
+            a = QAction(QIcon(resource_path(icon_path)), "", self)
             a.triggered.connect(slot)
             tb.addAction(a)
             a.setToolTip(tip)
             return a
+
         def aksi(label, slot, tip=""):
             a = QAction(label, self)
             a.triggered.connect(slot)
@@ -107,38 +96,30 @@ class MainWindow(QMainWindow):
             a.setToolTip(tip)
             return a
 
-        aksi_icon("icons/folder.png", self._buka,"Buka file PNG gambar aksara")
+        aksi_icon("icons/folder.png",   self._buka,            "Buka file PNG gambar aksara")
         tb.addSeparator()
-        self._act_zoom_in  = aksi_icon("icons/zoom-in.png", self.viewer.zoom_in, "Zoom in")
-        self._act_zoom_out = aksi_icon("icons/zoom_out.png", self.viewer.zoom_out, "Zoom out")
-        self._act_fit      = aksi_icon("icons/width.png",  self.viewer.zoom_fit, "Sesuaikan ke layar")
+        self._act_zoom_in  = aksi_icon("icons/zoom-in.png",    self.viewer.zoom_in,   "Zoom in")
+        self._act_zoom_out = aksi_icon("icons/zoom_out.png",   self.viewer.zoom_out,  "Zoom out")
+        self._act_fit      = aksi_icon("icons/width.png",      self.viewer.zoom_fit,  "Sesuaikan ke layar")
         tb.addSeparator()
-
-        # Mode tampilan
-        aksi_icon("icons/back.png",      self._tampil_asli,    "Tampilkan gambar asli RGB")
+        aksi_icon("icons/back.png",      self._tampil_asli,    "Tampilkan gambar asli")
         aksi_icon("icons/grayscale.png", self._tampil_gray,    "Tampilkan grayscale")
         aksi_icon("icons/coding.png",    self._tampil_biner,   "Tampilkan citra biner")
-        aksi_icon("icons/scissors.png",     self._tampil_cuts,    "Tampilkan garis pemotong baris")
-
-        # Separator + info file
+        aksi_icon("icons/scissors.png",  self._tampil_cuts,    "Tampilkan garis pemotong baris")
         tb.addSeparator()
+
         self._lbl_file = QLabel("  —")
         self._lbl_file.setStyleSheet("color: #7a6a90; font-size: 11px;")
-        # Spacer untuk dorong ke kanan
-        from PyQt6.QtWidgets import QWidget as _W
-        spacer = _W()
-        spacer.setSizePolicy(
-            QSizePolicy.Policy.Expanding,
-            QSizePolicy.Policy.Preferred
-        )
+
+        spacer = QWidget()
+        spacer.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         tb.addWidget(spacer)
 
-        # Tombol about
         btn_about = QPushButton("ℹ")
         btn_about.setToolTip("Tentang Aplikasi")
         btn_about.setFixedSize(28, 28)
         btn_about.setStyleSheet("""
-            QPushButton { 
+            QPushButton {
                 background: transparent; color: #7a6a90;
                 border: none; font-size: 14px; border-radius: 4px;
             }
@@ -149,30 +130,26 @@ class MainWindow(QMainWindow):
         tb.addWidget(self._lbl_file)
 
     # ── Buka file ─────────────────────────────
-    
 
     def _buka(self):
         path, _ = QFileDialog.getOpenFileName(
-            self, "Buka Gambar Aksara", "",
-            "PNG (*.png)"
+            self, "Buka Gambar Aksara", "", "PNG (*.png)"
         )
         if not path:
             return
         self._path  = path
         self._hasil = None
         self.settings.set_progress(0)
-        self.settings.set_info(f"{os.path.basename(path)}")
+        self.settings.set_info(os.path.basename(path))
         self.settings.aktifkan_run(True)
         self.settings.aktifkan_ekspor(False)
         self._lbl_file.setText(f"  {os.path.basename(path)}")
 
-        # Preview gambar langsung pakai QPixmap (cepat)
         from PyQt6.QtGui import QPixmap
         pix = QPixmap(path)
         if not pix.isNull():
             self.viewer._scene.clear()
             self.viewer._scene.addPixmap(pix)
-            from PyQt6.QtCore import QRectF
             self.viewer._scene.setSceneRect(QRectF(pix.rect()))
             self.viewer.fitInView(self.viewer._scene.sceneRect(),
                                   Qt.AspectRatioMode.KeepAspectRatio)
@@ -216,11 +193,15 @@ class MainWindow(QMainWindow):
     # ── Mode tampilan ─────────────────────────
 
     def _tampil_asli(self):
-        if not self._hasil:
+        if not self._path:
             return
-        h = self._hasil
-        qimg = rgb_ke_qimage(h["pixel_rgb"], h["lebar"], h["tinggi"])
-        self.viewer.tampilkan_qimage(qimg)
+        from PyQt6.QtGui import QPixmap
+        pix = QPixmap(self._path)
+        self.viewer._scene.clear()
+        self.viewer._scene.addPixmap(pix)
+        self.viewer._scene.setSceneRect(QRectF(pix.rect()))
+        self.viewer.fitInView(self.viewer._scene.sceneRect(),
+                              Qt.AspectRatioMode.KeepAspectRatio)
 
     def _tampil_gray(self):
         if not self._hasil:
@@ -256,18 +237,18 @@ class MainWindow(QMainWindow):
             f"ukuran {b['lebar']} × {b['tinggi']} px"
         )
 
-    # ── Ekspor .ppm ───────────────────────────
+    # ── Ekspor PPM ────────────────────────────
 
     def _ekspor_ppm(self):
         if not self._hasil:
             return
-        folder = QFileDialog.getExistingDirectory(self, "Pilih Folder Ekspor")
+        folder = QFileDialog.getExistingDirectory(self, "Pilih Folder Ekspor PPM")
         if not folder:
             return
 
         baris_list = self._hasil["baris_list"]
         for b in baris_list:
-            nama = os.path.join(folder, f"line_{b['index']}.ppm")
+            nama   = os.path.join(folder, f"line_{b['index']}.ppm")
             lebar  = b["lebar"]
             tinggi = b["tinggi"]
             with open(nama, "w") as f:
@@ -279,14 +260,41 @@ class MainWindow(QMainWindow):
                     f.write("\n")
 
         QMessageBox.information(
-            self, "Ekspor Selesai",
+            self, "Ekspor PPM Selesai",
             f"{len(baris_list)} file .ppm disimpan ke:\n{folder}"
         )
-        self.statusBar().showMessage(f"Diekspor {len(baris_list)} file ke {folder}")
-        
-    def _tampil_about(self):
-        from PyQt6.QtWidgets import QDialog, QVBoxLayout, QLabel, QFrame
+        self.statusBar().showMessage(f"Diekspor {len(baris_list)} PPM ke {folder}")
 
+    # ── Ekspor PNG ────────────────────────────
+
+    def _ekspor_png(self):
+        if not self._hasil:
+            return
+        folder = QFileDialog.getExistingDirectory(self, "Pilih Folder Ekspor PNG")
+        if not folder:
+            return
+
+        baris_list = self._hasil["baris_list"]
+        for b in baris_list:
+            lebar  = b["lebar"]
+            tinggi = b["tinggi"]
+            img = QImage(lebar, tinggi, QImage.Format.Format_RGB32)
+            for y in range(tinggi):
+                for x in range(lebar):
+                    v = 0 if b["biner_crop"][y][x] == 1 else 255
+                    img.setPixel(x, y, (v << 16) | (v << 8) | v)
+            nama = os.path.join(folder, f"line_{b['index']}.png")
+            img.save(nama)
+
+        QMessageBox.information(
+            self, "Ekspor PNG Selesai",
+            f"{len(baris_list)} file .png disimpan ke:\n{folder}"
+        )
+        self.statusBar().showMessage(f"Diekspor {len(baris_list)} PNG ke {folder}")
+
+    # ── Tentang ───────────────────────────────
+
+    def _tampil_about(self):
         dialog = QDialog(self)
         dialog.setWindowTitle("Tentang Aplikasi")
         dialog.setFixedSize(320, 300)
@@ -313,12 +321,13 @@ class MainWindow(QMainWindow):
         lay.addWidget(sep)
 
         for teks in [
-            "👤 github:NOID1622,dewaahr,MingPunyaGit",
-            "UNIVERSITAS KRISTEN DUTA WACANA",
-            "Mei 2026",
+            "👤 github: NOID1622, dewaahr, MingPunyaGit",
+            " UNIVERSITAS KRISTEN DUTA WACANA",
+            " Mei 2026",
         ]:
             lbl = QLabel(teks)
-            lbl.setStyleSheet("color: #c9b8e8; font-size: 12px;text-align: center;")
+            lbl.setWordWrap(True)
+            lbl.setStyleSheet("color: #c9b8e8; font-size: 12px;")
             lay.addWidget(lbl)
 
         lay.addStretch()
@@ -328,7 +337,7 @@ class MainWindow(QMainWindow):
             "Tugas akhir kelas Digital Humanitas."
         )
         deskripsi.setWordWrap(True)
-        deskripsi.setStyleSheet("color: #7a6a90; font-size: 11px; text-align: center;")
+        deskripsi.setStyleSheet("color: #7a6a90; font-size: 11px;")
         lay.addWidget(deskripsi)
 
         dialog.exec()

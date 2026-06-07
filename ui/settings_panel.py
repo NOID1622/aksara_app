@@ -5,20 +5,17 @@ from PyQt6.QtWidgets import (
     QSpinBox, QGroupBox
 )
 from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QFont
-from PyQt6.QtGui import QIcon
+from PyQt6.QtGui import QIcon, QFontDatabase
 from PyQt6.QtCore import QSize
-from PyQt6.QtGui import QFontDatabase
+
 
 class SettingsPanel(QWidget):
-    run_requested = pyqtSignal(int)   # threshold value
+    run_requested = pyqtSignal(int)
 
     def __init__(self):
         super().__init__()
         QFontDatabase.addApplicationFont(
-            resource_path(
-                "fonts/Acuentre Personal Use Only.ttf"
-            )
+            resource_path("fonts/Acuentre Personal Use Only.ttf")
         )
         self.setFixedWidth(260)
         self.setStyleSheet("""
@@ -53,7 +50,14 @@ class SettingsPanel(QWidget):
             QProgressBar::chunk { background: #FFCA5A; border-radius: 4px; }
             QSpinBox {
                 background: #2e2050; border: 1px solid #443357;
-                border-radius: 4px; padding: 2px 6px; color: #f0ecff;
+                border-radius: 4px; padding: 2px 4px; color: #f0ecff;
+                min-width: 48px;
+            }
+            QSpinBox::up-button, QSpinBox::down-button {
+                background: #443357; border: none; width: 14px;
+            }
+            QSpinBox::up-button:hover, QSpinBox::down-button:hover {
+                background: #5a4470;
             }
         """)
         self._build()
@@ -65,7 +69,10 @@ class SettingsPanel(QWidget):
 
         # ── Judul ──
         title = QLabel("Segmentasi Aksara")
-        title.setStyleSheet("font-family: 'Acuentre Personal Use Only';color: #FFCA5A; font-size: 36px; font-weight: bold;")
+        title.setStyleSheet(
+            "font-family: 'Acuentre Personal Use Only';"
+            "color: #FFCA5A; font-size: 36px; font-weight: bold;"
+        )
         layout.addWidget(title)
 
         sep = QFrame()
@@ -78,51 +85,59 @@ class SettingsPanel(QWidget):
         pre_lay = QVBoxLayout(grp_pre)
         pre_lay.setSpacing(8)
 
-        self._threshold_val = QLabel("Threshold:  170")
-        pre_lay.addWidget(self._threshold_val)
-
+        pre_lay.addWidget(QLabel("Threshold"))
         self._threshold = QSlider(Qt.Orientation.Horizontal)
         self._threshold.setRange(50, 250)
         self._threshold.setValue(170)
-        self._threshold.valueChanged.connect(
-            lambda v: self._threshold_val.setText(f"Threshold:  {v}")
-        )
-        pre_lay.addWidget(self._threshold)
+        self._threshold_spin = QSpinBox()
+        self._threshold_spin.setRange(50, 250)
+        self._threshold_spin.setValue(170)
+        self._threshold_spin.setFixedWidth(56)
+        self._threshold.valueChanged.connect(self._threshold_spin.setValue)
+        self._threshold_spin.valueChanged.connect(self._threshold.setValue)
+        row_t = QHBoxLayout()
+        row_t.addWidget(self._threshold)
+        row_t.addWidget(self._threshold_spin)
+        pre_lay.addLayout(row_t)
         layout.addWidget(grp_pre)
 
         # ── Proyeksi ──
-        grp_proj = QGroupBox("Proyeksi Baris")
-        proj_lay = QVBoxLayout(grp_proj)
-        proj_lay.setSpacing(8)
+        # grp_proj = QGroupBox("Proyeksi Baris")
+        # proj_lay = QVBoxLayout(grp_proj)
+        # proj_lay.setSpacing(8)
 
-        proj_lay.addWidget(QLabel("Window smoothing"))
-        self._smooth_win = QSlider(Qt.Orientation.Horizontal)
-        self._smooth_win.setRange(3, 31)
-        self._smooth_win.setSingleStep(2)
-        self._smooth_win.setValue(11)
-        self._smooth_lbl = QLabel("11")
-        self._smooth_win.valueChanged.connect(
-            lambda v: self._smooth_lbl.setText(str(v))
-        )
-        row = QHBoxLayout()
-        row.addWidget(self._smooth_win)
-        row.addWidget(self._smooth_lbl)
-        proj_lay.addLayout(row)
+        # proj_lay.addWidget(QLabel("Window smoothing"))
+        # self._smooth_win = QSlider(Qt.Orientation.Horizontal)
+        # self._smooth_win.setRange(3, 31)
+        # self._smooth_win.setSingleStep(2)
+        # self._smooth_win.setValue(11)
+        # self._smooth_spin = QSpinBox()
+        # self._smooth_spin.setRange(3, 31)
+        # self._smooth_spin.setValue(11)
+        # self._smooth_spin.setFixedWidth(56)
+        # self._smooth_win.valueChanged.connect(self._smooth_spin.setValue)
+        # self._smooth_spin.valueChanged.connect(self._smooth_win.setValue)
+        # row_s = QHBoxLayout()
+        # row_s.addWidget(self._smooth_win)
+        # row_s.addWidget(self._smooth_spin)
+        # proj_lay.addLayout(row_s)
 
-        proj_lay.addWidget(QLabel("Min. tinggi peak"))
-        self._min_peak = QSlider(Qt.Orientation.Horizontal)
-        self._min_peak.setRange(1, 100)
-        self._min_peak.setValue(20)
-        self._peak_lbl = QLabel("20")
-        self._min_peak.valueChanged.connect(
-            lambda v: self._peak_lbl.setText(str(v))
-        )
-        row2 = QHBoxLayout()
-        row2.addWidget(self._min_peak)
-        row2.addWidget(self._peak_lbl)
-        proj_lay.addLayout(row2)
+        # proj_lay.addWidget(QLabel("Min. tinggi peak"))
+        # self._min_peak = QSlider(Qt.Orientation.Horizontal)
+        # self._min_peak.setRange(1, 100)
+        # self._min_peak.setValue(20)
+        # self._peak_spin = QSpinBox()
+        # self._peak_spin.setRange(1, 100)
+        # self._peak_spin.setValue(20)
+        # self._peak_spin.setFixedWidth(56)
+        # self._min_peak.valueChanged.connect(self._peak_spin.setValue)
+        # self._peak_spin.valueChanged.connect(self._min_peak.setValue)
+        # row_p = QHBoxLayout()
+        # row_p.addWidget(self._min_peak)
+        # row_p.addWidget(self._peak_spin)
+        # proj_lay.addLayout(row_p)
 
-        layout.addWidget(grp_proj)
+        # layout.addWidget(grp_proj)
 
         # ── Tombol run ──
         self._run_btn = QPushButton("▶  Jalankan Segmentasi")
@@ -142,15 +157,10 @@ class SettingsPanel(QWidget):
         layout.addWidget(self._info_lbl)
 
         layout.addStretch()
-        
 
-        # ── Ekspor ──
+        # ── Ekspor PPM ──
         self._export_btn = QPushButton()
-        self._export_btn.setIcon(
-            QIcon(
-                resource_path("icons/diskette.png")
-            )
-        )
+        self._export_btn.setIcon(QIcon(resource_path("icons/diskette.png")))
         self._export_btn.setIconSize(QSize(18, 18))
         self._export_btn.setText("  Ekspor Baris (.ppm)")
         self._export_btn.setEnabled(False)
@@ -161,6 +171,19 @@ class SettingsPanel(QWidget):
         )
         layout.addWidget(self._export_btn)
 
+        # ── Ekspor PNG ──
+        self._export_png_btn = QPushButton()
+        self._export_png_btn.setIcon(QIcon(resource_path("icons/diskette.png")))
+        self._export_png_btn.setIconSize(QSize(18, 18))
+        self._export_png_btn.setText("  Ekspor Baris (.png)")
+        self._export_png_btn.setEnabled(False)
+        self._export_png_btn.setStyleSheet(
+            "QPushButton { background: #443357; color: #c9b8e8; border-radius: 6px; padding: 7px; }"
+            "QPushButton:hover { background: #5a4470; }"
+            "QPushButton:disabled { background: #14103A; color: #3a2a50; }"
+        )
+        layout.addWidget(self._export_png_btn)
+
     # ── Public API ──────────────────────────────
 
     def aktifkan_run(self, aktif: bool):
@@ -168,6 +191,7 @@ class SettingsPanel(QWidget):
 
     def aktifkan_ekspor(self, aktif: bool):
         self._export_btn.setEnabled(aktif)
+        self._export_png_btn.setEnabled(aktif)
 
     def set_progress(self, val: int):
         self._progress.setValue(val)
@@ -189,57 +213,9 @@ class SettingsPanel(QWidget):
     def ekspor_btn(self):
         return self._export_btn
 
+    @property
+    def ekspor_png_btn(self):
+        return self._export_png_btn
+
     def _emit(self):
         self.run_requested.emit(self._threshold.value())
-
-# documentation
-
-def _tampil_about(self):
-    from PyQt6.QtWidgets import QDialog, QVBoxLayout, QLabel
-    
-    dialog = QDialog(self)
-    dialog.setWindowTitle("Tentang Aplikasi")
-    dialog.setFixedSize(320, 280)
-    dialog.setStyleSheet("""
-        QDialog { background: #14103A; }
-        QLabel  { color: #c9b8e8; }
-    """)
-
-    lay = QVBoxLayout(dialog)
-    lay.setSpacing(10)
-    lay.setContentsMargins(24, 24, 24, 24)
-
-    judul = QLabel("Segmentasi Aksara")
-    judul.setStyleSheet("color: #FFCA5A; font-size: 16px; font-weight: bold; font-family: 'Acuentre';")
-    lay.addWidget(judul)
-
-    versi = QLabel("Versi 1.0.0")
-    versi.setStyleSheet("color: #443357; font-size: 11px;")
-    lay.addWidget(versi)
-
-    sep = QFrame()
-    sep.setFrameShape(QFrame.Shape.HLine)
-    sep.setStyleSheet("color: #443357;")
-    lay.addWidget(sep)
-
-    for teks in [
-        "👤 Nama Anda",
-        "🏫 Universitas / Instansi",
-        "📧 email@contoh.com",
-        "📅 2025",
-    ]:
-        lbl = QLabel(teks)
-        lbl.setStyleSheet("color: #c9b8e8; font-size: 12px;")
-        lay.addWidget(lbl)
-
-    lay.addStretch()
-
-    deskripsi = QLabel(
-        "Aplikasi segmentasi baris aksara dari gambar\n"
-        "manuskrip PNG menggunakan pipeline murni Python."
-    )
-    deskripsi.setWordWrap(True)
-    deskripsi.setStyleSheet("color: #7a6a90; font-size: 11px;")
-    lay.addWidget(deskripsi)
-
-    dialog.exec()
