@@ -162,9 +162,13 @@ class MainWindow(QMainWindow):
         if not self._path:
             return
         self.settings.aktifkan_run(False)
-        self.statusBar().showMessage("Memproses pipeline segmentasi…")
-
-        self._worker = PipelineWorker(self._path, threshold)
+        self._worker = PipelineWorker(
+            self._path,
+            threshold,
+            self.settings.get_smooth_window(),
+            self.settings.get_jarak_min(),
+            self.settings.get_min_peak(),
+        )
         self._worker.progress.connect(self.settings.set_progress)
         self._worker.finished.connect(self._selesai)
         self._worker.error.connect(self._error)

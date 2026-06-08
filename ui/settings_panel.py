@@ -62,6 +62,13 @@ class SettingsPanel(QWidget):
         """)
         self._build()
 
+    def _buat_slider_row(self, layout, label, slider, spin):
+        layout.addWidget(QLabel(label))
+        row = QHBoxLayout()
+        row.addWidget(slider)
+        row.addWidget(spin)
+        layout.addLayout(row)
+
     def _build(self):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(12, 16, 12, 12)
@@ -85,7 +92,6 @@ class SettingsPanel(QWidget):
         pre_lay = QVBoxLayout(grp_pre)
         pre_lay.setSpacing(8)
 
-        pre_lay.addWidget(QLabel("Threshold"))
         self._threshold = QSlider(Qt.Orientation.Horizontal)
         self._threshold.setRange(50, 250)
         self._threshold.setValue(170)
@@ -95,49 +101,50 @@ class SettingsPanel(QWidget):
         self._threshold_spin.setFixedWidth(56)
         self._threshold.valueChanged.connect(self._threshold_spin.setValue)
         self._threshold_spin.valueChanged.connect(self._threshold.setValue)
-        row_t = QHBoxLayout()
-        row_t.addWidget(self._threshold)
-        row_t.addWidget(self._threshold_spin)
-        pre_lay.addLayout(row_t)
+        self._buat_slider_row(pre_lay, "Threshold", self._threshold, self._threshold_spin)
+
         layout.addWidget(grp_pre)
 
-        # ── Proyeksi ──
-        # grp_proj = QGroupBox("Proyeksi Baris")
-        # proj_lay = QVBoxLayout(grp_proj)
-        # proj_lay.setSpacing(8)
+        # ── Proyeksi Baris ──
+        grp_proj = QGroupBox("Proyeksi Baris")
+        proj_lay = QVBoxLayout(grp_proj)
+        proj_lay.setSpacing(8)
 
-        # proj_lay.addWidget(QLabel("Window smoothing"))
-        # self._smooth_win = QSlider(Qt.Orientation.Horizontal)
-        # self._smooth_win.setRange(3, 31)
-        # self._smooth_win.setSingleStep(2)
-        # self._smooth_win.setValue(11)
-        # self._smooth_spin = QSpinBox()
-        # self._smooth_spin.setRange(3, 31)
-        # self._smooth_spin.setValue(11)
-        # self._smooth_spin.setFixedWidth(56)
-        # self._smooth_win.valueChanged.connect(self._smooth_spin.setValue)
-        # self._smooth_spin.valueChanged.connect(self._smooth_win.setValue)
-        # row_s = QHBoxLayout()
-        # row_s.addWidget(self._smooth_win)
-        # row_s.addWidget(self._smooth_spin)
-        # proj_lay.addLayout(row_s)
+        self._smooth_win = QSlider(Qt.Orientation.Horizontal)
+        self._smooth_win.setRange(3, 31)
+        self._smooth_win.setSingleStep(2)
+        self._smooth_win.setValue(11)
+        self._smooth_spin = QSpinBox()
+        self._smooth_spin.setRange(3, 31)
+        self._smooth_spin.setValue(11)
+        self._smooth_spin.setFixedWidth(56)
+        self._smooth_win.valueChanged.connect(self._smooth_spin.setValue)
+        self._smooth_spin.valueChanged.connect(self._smooth_win.setValue)
+        self._buat_slider_row(proj_lay, "Window Smoothing", self._smooth_win, self._smooth_spin)
 
-        # proj_lay.addWidget(QLabel("Min. tinggi peak"))
-        # self._min_peak = QSlider(Qt.Orientation.Horizontal)
-        # self._min_peak.setRange(1, 100)
-        # self._min_peak.setValue(20)
-        # self._peak_spin = QSpinBox()
-        # self._peak_spin.setRange(1, 100)
-        # self._peak_spin.setValue(20)
-        # self._peak_spin.setFixedWidth(56)
-        # self._min_peak.valueChanged.connect(self._peak_spin.setValue)
-        # self._peak_spin.valueChanged.connect(self._min_peak.setValue)
-        # row_p = QHBoxLayout()
-        # row_p.addWidget(self._min_peak)
-        # row_p.addWidget(self._peak_spin)
-        # proj_lay.addLayout(row_p)
+        self._jarak_min = QSlider(Qt.Orientation.Horizontal)
+        self._jarak_min.setRange(5, 100)
+        self._jarak_min.setValue(30)
+        self._jarak_min_spin = QSpinBox()
+        self._jarak_min_spin.setRange(5, 100)
+        self._jarak_min_spin.setValue(30)
+        self._jarak_min_spin.setFixedWidth(56)
+        self._jarak_min.valueChanged.connect(self._jarak_min_spin.setValue)
+        self._jarak_min_spin.valueChanged.connect(self._jarak_min.setValue)
+        self._buat_slider_row(proj_lay, "Jarak Minimum Peak", self._jarak_min, self._jarak_min_spin)
 
-        # layout.addWidget(grp_proj)
+        self._min_peak = QSlider(Qt.Orientation.Horizontal)
+        self._min_peak.setRange(1, 100)
+        self._min_peak.setValue(20)
+        self._min_peak_spin = QSpinBox()
+        self._min_peak_spin.setRange(1, 100)
+        self._min_peak_spin.setValue(20)
+        self._min_peak_spin.setFixedWidth(56)
+        self._min_peak.valueChanged.connect(self._min_peak_spin.setValue)
+        self._min_peak_spin.valueChanged.connect(self._min_peak.setValue)
+        self._buat_slider_row(proj_lay, "Min. Tinggi Peak", self._min_peak, self._min_peak_spin)
+
+        layout.addWidget(grp_proj)
 
         # ── Tombol run ──
         self._run_btn = QPushButton("▶  Jalankan Segmentasi")
@@ -205,6 +212,9 @@ class SettingsPanel(QWidget):
     def get_smooth_window(self) -> int:
         v = self._smooth_win.value()
         return v if v % 2 == 1 else v + 1
+
+    def get_jarak_min(self) -> int:
+        return self._jarak_min.value()
 
     def get_min_peak(self) -> int:
         return self._min_peak.value()
